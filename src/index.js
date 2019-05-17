@@ -1,18 +1,20 @@
-const viewportUnitRE = /^([+-]?[0-9.]+)(vh|vw|vmin|vmax)$/;
+/* eslint-disable */
+const px2dpUnitRE = /^([+-]?[0-9.]+)(pxdp|pxfz)$/;
 
-function isViewportUnit(value) {
-  return viewportUnitRE.test(value);
+function isPx2dpUnit(value) {
+  return px2dpUnitRE.test(value);
 }
 
 function getMatchObject(dim) {
-  const vh = dim.height;
-  const vw = dim.width;
-  return {
-    vh: vh,
-    vw: vw,
-    vmax: Math.max(vw, vh),
-    vmin: Math.min(vw, vh)
-  };
+  // const vh = dim.height;
+  // const vw = dim.width;
+  // return {
+  //   vh: vh,
+  //   vw: vw,
+  //   vmax: Math.max(vw, vh),
+  //   vmin: Math.min(vw, vh)
+  // };
+  return dim;
 }
 
 function clone(aObject) {
@@ -28,14 +30,22 @@ function clone(aObject) {
 export function transform(styles, dimensions) {
   const dim = getMatchObject(dimensions);
 
-  function replaceViewportUnit(_, number, unit) {
-    const base = dim[unit];
-    const val = parseFloat(number) / 100;
-    return val * base;
+  function replacePx2dpUnit(_, number, unit) {
+    
+    // const base = dim[unit];
+    // const val = parseFloat(number) / 100;
+    // return val * base;
+    let val = number;
+    if(unit === 'pxdp'){ // for dimension size
+      val = dimSize(number, dim);
+    }else if(unit === 'pxfz'){ // for fontsize
+      val = textSize(number, dim);
+    }
+    return val;
   }
 
   function replace(value) {
-    return parseFloat(value.replace(viewportUnitRE, replaceViewportUnit));
+    return parseFloat(value.replace(px2dpUnitRE, replacePx2dpUnit));
   }
 
   const replacement = clone(styles);
@@ -43,7 +53,7 @@ export function transform(styles, dimensions) {
   for (const key in replacement) {
     const selector = replacement[key];
 
-    if (isViewportUnit(selector)) {
+    if (isPx2dpUnit(selector)) {
       replacement[key] = replace(selector);
       continue;
     }
@@ -51,13 +61,13 @@ export function transform(styles, dimensions) {
     for (const key in selector) {
       const val = selector[key];
 
-      if (isViewportUnit(val)) {
+      if (isPx2dpUnit(val)) {
         selector[key] = replace(val);
         continue;
       }
 
       for (const key in val) {
-        if (isViewportUnit(val[key])) {
+        if (isPx2dpUnit(val[key])) {
           val[key] = replace(val[key]);
           continue;
         }
@@ -66,3 +76,14 @@ export function transform(styles, dimensions) {
   }
   return replacement;
 }
+
+function dimSize(size, dimensions){
+  const designWidth = dimensions.designWidth;
+  return Math.round((size / designWidth) * dimensions.width);
+}
+
+function textSize(size, dimensions){
+  const designWidth = dimensions.designWidth;
+  return Math.round((size / designWidth) * dimensions.width / dimensions.fontScale);
+}
+
