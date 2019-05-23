@@ -32,6 +32,7 @@
     "benchmark": "yarn build && node benchmark.js",
     "size": "npm run build && size-limit",
     "prepublish": "npm run build",
+    "prepare": "npm run build",
     "prebuild": "rimraf dist",
     "build": "babel src --out-dir dist --ignore src/__tests__,src/__mocks__",
     "precommit": "lint-staged",
